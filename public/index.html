@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Specific User Emails</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      #map {
+        height: 500px;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .user-list {
+        margin: 20px 0;
+      }
+      .email-item {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Specific User Emails Map</h1>
+
+    <div class="user-list">
+      <h3>Tracking These Users:</h3>
+      <div id="users"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <div>
+      <button onclick="loadEmails()">Load Emails</button>
+      <div id="emails"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      let map = L.map("map").setView([20, 0], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
+        map
+      );
+
+      // Simple email to location mapping
+      const emailLocations = {
+        "john@gmail.com": { lat: 40.7128, lng: -74.006, city: "New York" },
+        "jane@yahoo.com": { lat: 51.5074, lng: -0.1278, city: "London" },
+        "bob@outlook.com": { lat: 35.6762, lng: 139.6503, city: "Tokyo" },
+      };
+
+      function loadEmails() {
+        fetch("/api/specific-emails")
+          .then((res) => res.json())
+          .then((data) => {
+            // Show users
+            document.getElementById("users").innerHTML = data.users
+              .map((user) => `<div>📍 ${user}</div>`)
+              .join("");
+
+            // Show emails
+            document.getElementById("emails").innerHTML = data.emails
+              .map(
+                (email) => `
+                            <div class="email-item">
+                                <strong>${email.from}</strong><br>
+                                ${email.subject}<br>
+                                <small>${email.date}</small>
+                            </div>
+                        `
+              )
+              .join("");
+
+            // Add markers to map
+            data.emails.forEach((email) => {
+              const user = email.user;
+              const loc = emailLocations[user];
+
+              if (loc) {
+                L.marker([loc.lat, loc.lng]).addTo(map).bindPopup(`
+                                    <b>${email.from}</b><br>
+                                    ${email.subject}<br>
+                                    ${loc.city}
+                                `);
+              }
+            });
+          });
+      }
+
+      // Show users on load
+      loadEmails();
+    </script>
+  </body>
+</html>
